@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>股指持仓研判看板 · IF/IH/IC/IM</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true"></div>
+    <div class="brand-text">
+      <h1>股指持仓研判看板</h1>
+      <p class="brand-sub">中金所成交持仓排名 × 指数拟合 · 中信期货净持仓跟踪</p>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="tool-group">
+      <span class="tool-label">数据截止</span>
+      <span class="tool-value" id="asOf">—</span>
+    </div>
+    <div class="tabs" id="varietyTabs" role="tablist" aria-label="品种切换"></div>
+    <div class="tabs" id="lookbackTabs" role="tablist" aria-label="时间窗口切换"></div>
+    <button class="btn btn-ghost" id="btnExport" type="button" title="导出当前品种与窗口的 CSV">导出 CSV</button>
+    <button class="btn btn-primary" id="btnSync" type="button">
+      <span class="btn-spinner" aria-hidden="true"></span>
+      <span class="btn-label">立即更新数据</span>
+    </button>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span class="badge" id="modeBadge" hidden></span>
+  <span class="sync-status" id="syncStatus"></span>
+  <span class="muted" id="metaInfo"></span>
+  <span class="muted" id="varietyMeta"></span>
+</div>
+
+<div class="banner" id="banner" hidden></div>
+
+<noscript><div class="banner banner-error">本页需要启用 JavaScript 才能显示看板数据。</div></noscript>
+
+<main class="layout">
+
+  <!-- ① 次日研判 -->
+  <section class="card" id="sec-guidance">
+    <div class="card-head">
+      <h2><span class="dot dot-up"></span>次日研判</h2>
+      <div class="card-note" id="gTarget">—</div>
+    </div>
+    <div class="card-body" id="guidanceBody">
+      <div class="skeleton">加载中…</div>
+    </div>
+  </section>
+
+  <!-- ② 持仓总览 -->
+  <section class="card" id="sec-overview">
+    <div class="card-head">
+      <h2><span class="dot dot-accent"></span>持仓总览 · 中信期货</h2>
+      <div class="card-note" id="oSnapshotDate">—</div>
+    </div>
+    <div class="card-body">
+      <div class="tile-grid" id="overviewTiles"><div class="skeleton">加载中…</div></div>
+      <h3 class="sub-head">四品种横向对比<span class="hint">点击卡片切换品种</span></h3>
+      <div class="variety-grid" id="varietyCards"><div class="skeleton">加载中…</div></div>
+    </div>
+  </section>
+
+  <!-- ③ 拟合分析 -->
+  <section class="card" id="sec-fit">
+    <div class="card-head">
+      <h2><span class="dot dot-purple"></span>拟合分析 · 净持仓与指数</h2>
+      <div class="card-note" id="fitNote">—</div>
+    </div>
+    <div class="card-body">
+      <div class="tile-grid tile-grid-6" id="fitStats"><div class="skeleton">加载中…</div></div>
+      <div class="chart-grid">
+        <div class="chart-box">
+          <div class="chart-title">中信净持仓 vs 指数收盘（双轴）</div>
+          <div class="chart" id="chart-fit-net"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">净空单变化（标准化） vs 次日收益 · 散点与回归</div>
+          <div class="chart" id="chart-fit-scatter"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">60 日滚动相关（同期 / 预测）</div>
+          <div class="chart" id="chart-fit-roll"></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">领先滞后相关（t−lag 因子 → 指数收益）</div>
+          <div class="chart" id="chart-fit-lag"></div>
+        </div>
+      </div>
+      <h3 class="sub-head">因子回归明细<span class="hint">经典 OLS，p 值用正态近似</span></h3>
+      <div class="table-wrap" id="fitModels"><div class="skeleton">加载中…</div></div>
+      <h3 class="sub-head">年度稳定性</h3>
+      <div class="table-wrap" id="fitStability"><div class="skeleton">加载中…</div></div>
+    </div>
+  </section>
+
+  <!-- ④ 分位胜率 -->
+  <section class="card" id="sec-buckets">
+    <div class="card-head">
+      <h2><span class="dot dot-warn"></span>分位胜率 · 五分组</h2>
+      <div class="card-note" id="bucketNote">—</div>
+    </div>
+    <div class="card-body">
+      <div class="chart-box">
+        <div class="chart-title">次日平均收益（柱，左轴）与胜率（线，右轴）</div>
+        <div class="chart" id="chart-buckets"></div>
+      </div>
+      <div id="bucketBody"><div class="skeleton">加载中…</div></div>
+    </div>
+  </section>
+
+  <!-- ⑤ 回测 -->
+  <section class="card" id="sec-backtest">
+    <div class="card-head">
+      <h2><span class="dot dot-down"></span>回测</h2>
+      <div class="card-note" id="btNote">—</div>
+    </div>
+    <div class="card-body">
+      <div class="tile-grid tile-grid-4" id="btMetrics"><div class="skeleton">加载中…</div></div>
+      <div class="chart-box">
+        <div class="chart-title">策略累计收益 vs 指数买入持有</div>
+        <div class="chart chart-tall" id="chart-backtest"></div>
+      </div>
+      <div id="btExtra"></div>
+    </div>
+  </section>
+
+  <!-- ⑥ 会员龙虎榜 -->
+  <section class="card" id="sec-ranks">
+    <div class="card-head">
+      <h2><span class="dot dot-orange"></span>会员龙虎榜</h2>
+      <div class="card-note" id="rankNote">—</div>
+    </div>
+    <div class="card-body">
+      <div id="rankHighlight"></div>
+      <div class="rank-grid" id="rankTables"><div class="skeleton">加载中…</div></div>
+      <h3 class="sub-head">会员净持仓对比<span class="hint">按最新净持仓排序</span></h3>
+      <div class="table-wrap" id="rankMembers"><div class="skeleton">加载中…</div></div>
+    </div>
+  </section>
+
+  <!-- 数据说明 -->
+  <section class="card" id="sec-notes">
+    <div class="card-head">
+      <h2><span class="dot dot-dim"></span>数据说明与免责声明</h2>
+    </div>
+    <div class="card-body" id="notesBody">—</div>
+  </section>
+
+</main>
+
+<footer class="footer" id="footer">
+  <span>数据来源：中国金融期货交易所「成交持仓排名」· 新浪财经指数日线</span>
+  <span class="muted">仅作统计分析参考，不构成投资建议</span>
+</footer>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="vendor/echarts.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/api.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/render/guidance.js"></script>
+<script src="js/render/overview.js"></script>
+<script src="js/render/fit.js"></script>
+<script src="js/render/buckets.js"></script>
+<script src="js/render/backtest.js"></script>
+<script src="js/render/ranks.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

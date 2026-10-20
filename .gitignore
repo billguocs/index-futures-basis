@@ -1,0 +1,27 @@
+# 运行时产物
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# 数据库与抓取缓存（体积大，不入库；clone 后首次运行会自动同步生成）
+data/*
+!data/.gitkeep
+
+# 侦察/调试临时文件
+_*.txt
+_*.py
+_*.html
+_*.js
+_*.png
+_*.json
+_*.log
+_echarts_test.js
+_ccpm*
+
+# 编辑器/系统
+.swp
+.DS_Store
+Thumbs.db

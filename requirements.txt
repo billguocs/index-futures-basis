@@ -1,0 +1,14 @@
+# 本项目的运行时依赖说明
+#
+# 刻意只使用「标准库 + numpy + pandas」，不引入任何 Web 框架、ORM 或爬虫库，
+# 因为运行环境已内置以下版本，零安装即可启动：
+#
+#   python  >= 3.11   (内置运行时)
+#   numpy   2.3.5
+#   pandas  3.0.1
+#
+# Web 服务使用标准库 http.server；HTTP 抓取使用标准库 urllib.request；
+# 存储使用标准库 sqlite3；统计推断（OLS/t 检验）用 numpy 手写实现。
+#
+# 因此本文件没有需要 pip install 的内容。
+# 如确需扩展，请优先选择纯 Python 库并更新本说明。
